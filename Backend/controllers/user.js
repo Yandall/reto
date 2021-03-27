@@ -16,7 +16,7 @@ async function getAllUsers(req, res) {
 async function updateUser(req, res) {
     let token = req.headers['token']
     let role = jwt.decode(token).role
-    if (role != '1') {
+    if (role != 'Admin') {
         res.status(401).send({ok: false, message:"You are not authorized to update"})
         return
     }
@@ -37,7 +37,7 @@ async function updateUser(req, res) {
 async function deleteUser(req, res) {
     let token = req.headers['token']
     let role = jwt.decode(token).role
-    if (role != '1') {
+    if (role != 'Admin') {
         res.status(401).send({ok: false, message:"You are not authorized to delete"})
         return
     }

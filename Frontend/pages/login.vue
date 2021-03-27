@@ -193,7 +193,6 @@ export default {
       })
         .then((res) => {
           document.cookie = `token=${res.data.token}`
-          console.log(res)
           this.$router.push({path: '/'})
         })
         .catch((err) => {
@@ -210,7 +209,7 @@ export default {
         name: this.name,
         lastname: this.lastname,
         email: this.newEmail,
-        role: 2,
+        role: "Usuario",
         phone: this.phone,
         password: md5(this.newPassword),
       }

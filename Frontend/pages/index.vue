@@ -1,20 +1,20 @@
 <template>
   <v-row justify="center" align="center">
     <v-col cols="10">
-      <v-data-table
-        :headers="headers"
-        :items="users"
-        class="elevation-1"
-      >
+      <v-data-table :headers="headers" :items="users" class="elevation-1">
         <template v-slot:top>
           <v-toolbar flat>
-            <v-toolbar-title>Users</v-toolbar-title>
+            <v-toolbar-title>You are a: {{role}}. 
+              <p v-if="role == 'Admin'"> You have permission to delete and edit users. </p>
+              <p v-else> You are only allowed to view the users</p>
+            
+            </v-toolbar-title>
             <v-divider class="mx-4" inset vertical></v-divider>
             <v-spacer></v-spacer>
             <v-dialog v-model="dialog" max-width="500px">
               <v-card>
                 <v-card-title>
-                  <span class="headline">{{ formTitle }}</span>
+                  <span class="headline">Edit User</span>
                 </v-card-title>
 
                 <v-card-text>
@@ -42,9 +42,9 @@
                           label="Email*"
                           prepend-inner-icon="mdi-email"
                           :rules="emailRules"
-                          required
+                          disabled
                         ></v-text-field>
-                      </v-col>              
+                      </v-col>
                       <v-col cols="6">
                         <v-select
                           v-model="editedItem.type_id"
@@ -75,7 +75,7 @@
                       <v-col cols="6">
                         <v-select
                           v-model="editedItem.role"
-                          :items="['1', '2', '3']"
+                          :items="['Admin', 'User', 'Client']"
                           label="Role*"
                           :rules="[rules.required]"
                           required
@@ -98,7 +98,7 @@
             <v-dialog v-model="dialogDelete" max-width="500px">
               <v-card>
                 <v-card-title class="headline"
-                  >Are you sure you want to delete this item?</v-card-title
+                  >Are you sure you want to delete this user?</v-card-title
                 >
                 <v-card-actions>
                   <v-spacer></v-spacer>
@@ -114,10 +114,8 @@
             </v-dialog>
           </v-toolbar>
         </template>
-        <template v-slot:item.actions="{ item }">
-          <v-icon small class="mr-2" @click="editItem(item)">
-            mdi-pencil
-          </v-icon>
+        <template v-slot:item.actions="{ item }" v-if="role == 'Admin'">
+          <v-icon small class="mr-2" @click="editItem(item)">mdi-pencil</v-icon>
           <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
         </template>
         <template v-slot:no-data>
@@ -129,9 +127,9 @@
 </template>
 
 <script>
-import { url } from "../assets/config"
-import Axios from "axios"
-
+import { url } from "../assets/config";
+import Axios from "axios";
+import jwt from "jsonwebtoken";
 
 export default {
   data: () => ({
@@ -153,7 +151,7 @@ export default {
       (v) => /^\d+$/.test(v) || "Must contain only numbers",
     ],
     headers: [
-      { text: "Name", value: "name", align: "start"},
+      { text: "Name", value: "name", align: "start" },
       { text: "Lastname", value: "lastname" },
       { text: "Email", value: "email", sortable: false },
       { text: "Identification type", value: "type_id" },
@@ -182,14 +180,8 @@ export default {
       phone: "",
       role: "",
     },
-    
+    role: "User",
   }),
-
-  computed: {
-    formTitle() {
-      return this.editedIndex === -1 ? "New Item" : "Edit Item";
-    },
-  },
 
   watch: {
     dialog(val) {
@@ -206,19 +198,25 @@ export default {
 
   methods: {
     initialize() {
-      
-      let secret_token = document.cookie.split("=")[1]
-      this.title = 'Hola papa'
-      Axios.get(`${url}/users`, {headers: {token: secret_token}})
-      .then((res) => {
-        this.users = res.data.data
-      }).catch((err) => {
-        if (err.response.status == 401) {
-          document.cookie = "token=;"
-          this.$router.push({path: '/login'})
-        }
-        console.log(err.response)
-      })
+      let secret_token = document.cookie.split("=")[1];
+      this.role = jwt.decode(secret_token).role;
+
+      this.getUsers();
+    },
+
+    getUsers() {
+      let secret_token = document.cookie.split("=")[1];
+      Axios.get(`${url}/users`, { headers: { token: secret_token } })
+        .then((res) => {
+          this.users = res.data.data;
+        })
+        .catch((err) => {
+          if (err.response.status == 401) {
+            document.cookie = "token=;";
+            this.$router.push({ path: "/login" });
+          }
+          console.log(err.response);
+        });
     },
 
     editItem(item) {
@@ -234,7 +232,20 @@ export default {
     },
 
     deleteItemConfirm() {
-      this.users.splice(this.editedIndex, 1);
+      let secret_token = document.cookie.split("=")[1];
+      Axios.delete(`${url}/users`, this.editedItem.email, {
+        headers: { token: secret_token },
+      })
+        .then((res) => {
+          alert(res.data.message);
+        })
+        .catch((err) => {
+          alert(err.response.data.message);
+          console.log(err.response);
+        })
+        .finally(() => {
+          this.initialize();
+        });
       this.closeDelete();
     },
 
@@ -256,7 +267,20 @@ export default {
 
     save() {
       if (this.editedIndex > -1) {
-        Object.assign(this.users[this.editedIndex], this.editedItem);
+        let secret_token = document.cookie.split("=")[1];
+        Axios.put(`${url}/users`, this.editedItem, {
+          headers: { token: secret_token },
+        })
+          .then((res) => {
+            alert(res.data.message);
+          })
+          .catch((err) => {
+            alert(err.response.data.message);
+            console.log(err.response);
+          })
+          .finally(() => {
+            this.initialize();
+          });
       } else {
         this.users.push(this.editedItem);
       }
