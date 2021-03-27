@@ -197,8 +197,8 @@ export default {
           this.$router.push({path: '/'})
         })
         .catch((err) => {
-          alert("There is not an existing user with that combination of email and password")
-          console.log(err)
+          alert(err.response.data.message)
+          console.log(err.response)
         });
     },
 
@@ -226,7 +226,7 @@ export default {
         }
       }).catch((err) => {
         this.alertType = "error"
-        this.alertMessage = "Error while creating new user"
+        this.alertMessage = err.response.data.message
       })
       this.clearInputs()
     },

@@ -208,10 +208,16 @@ export default {
     initialize() {
       
       let secret_token = document.cookie.split("=")[1]
+      this.title = 'Hola papa'
       Axios.get(`${url}/users`, {headers: {token: secret_token}})
       .then((res) => {
-        console.log(res.data)
         this.users = res.data.data
+      }).catch((err) => {
+        if (err.response.status == 401) {
+          document.cookie = "token=;"
+          this.$router.push({path: '/login'})
+        }
+        console.log(err.response)
       })
     },
 
