@@ -50,7 +50,6 @@ async function getUser(user) {
     return await connection.sql(sql, params)
 }
 
-
 function generateAccessToken(user) {
     delete user.password
     return jwt.sign(user, process.env.SECRET_TOKEN, {expiresIn: "1800s"})
@@ -61,12 +60,12 @@ function authenticateToken(req, res, next) {
 
     if(!token) return res.status(401).send({ok: false, message: "Please login first"})
     
-    jwt.verify(token, process.env.SECRET_TOKEN, (err, res) => {
+    jwt.verify(token, process.env.SECRET_TOKEN, (err, res_jwt) => {
         if (err) {
             console.log(err)
             res.status(401).send({
                 ok: false,
-                message: "Please login first"
+                message: "Invalid token"
             })
         }
 

@@ -7,8 +7,10 @@ app.use(express.json())
 app.use(cors())
 
 const login = require('./routes/login')
+const users = require('./routes/users')
 
 app.use('/login', login)
+app.use('/users', users)
 
 const port = process.env.PORT
 app.listen(port, () => {

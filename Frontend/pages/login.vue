@@ -185,7 +185,6 @@ export default {
       (v) => /^\d+$/.test(v) || "Must contain only numbers",
     ],
   }),
-
   methods: {
     login() {
       if (!this.$refs.login.validate()) return;
@@ -198,6 +197,7 @@ export default {
           this.$router.push({path: '/'})
         })
         .catch((err) => {
+          alert("There is not an existing user with that combination of email and password")
           console.log(err)
         });
     },

@@ -1,89 +1,261 @@
 <template>
   <v-row justify="center" align="center">
-    <v-col cols="12" sm="8" md="6">
-      <div class="text-center">
-        <logo />
-        <vuetify-logo />
-      </div>
-      <v-card>
-        <v-card-title class="headline">
-          Welcome to the Vuetify + Nuxt.js template
-        </v-card-title>
-        <v-card-text>
-          <p>Vuetify is a progressive Material Design component framework for Vue.js. It was designed to empower developers to create amazing applications.</p>
-          <p>
-            For more information on Vuetify, check out the <a
-              href="https://vuetifyjs.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              documentation
-            </a>.
-          </p>
-          <p>
-            If you have questions, please join the official <a
-              href="https://chat.vuetifyjs.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="chat"
-            >
-              discord
-            </a>.
-          </p>
-          <p>
-            Find a bug? Report it on the github <a
-              href="https://github.com/vuetifyjs/vuetify/issues"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="contribute"
-            >
-              issue board
-            </a>.
-          </p>
-          <p>Thank you for developing with Vuetify and I look forward to bringing more exciting features in the future.</p>
-          <div class="text-xs-right">
-            <em><small>&mdash; John Leider</small></em>
-          </div>
-          <hr class="my-3">
-          <a
-            href="https://nuxtjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Nuxt Documentation
-          </a>
-          <br>
-          <a
-            href="https://github.com/nuxt/nuxt.js"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Nuxt GitHub
-          </a>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="primary"
-            nuxt
-            to="/inspire"
-          >
-            Continue
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+    <v-col cols="10">
+      <v-data-table
+        :headers="headers"
+        :items="users"
+        class="elevation-1"
+      >
+        <template v-slot:top>
+          <v-toolbar flat>
+            <v-toolbar-title>Users</v-toolbar-title>
+            <v-divider class="mx-4" inset vertical></v-divider>
+            <v-spacer></v-spacer>
+            <v-dialog v-model="dialog" max-width="500px">
+              <v-card>
+                <v-card-title>
+                  <span class="headline">{{ formTitle }}</span>
+                </v-card-title>
+
+                <v-card-text>
+                  <v-container>
+                    <v-row>
+                      <v-col cols="12" sm="6" md="6">
+                        <v-text-field
+                          v-model="editedItem.name"
+                          label="Legal first name*"
+                          :rules="[rules.required]"
+                          required
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="6">
+                        <v-text-field
+                          v-model="editedItem.lastname"
+                          label="Legal last name*"
+                          :rules="[rules.required]"
+                          required
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12">
+                        <v-text-field
+                          v-model="editedItem.email"
+                          label="Email*"
+                          prepend-inner-icon="mdi-email"
+                          :rules="emailRules"
+                          required
+                        ></v-text-field>
+                      </v-col>              
+                      <v-col cols="6">
+                        <v-select
+                          v-model="editedItem.type_id"
+                          :items="['CC', 'TI', 'other']"
+                          label="Identification type*"
+                          :rules="[rules.required]"
+                          required
+                        ></v-select>
+                      </v-col>
+                      <v-col cols="6">
+                        <v-text-field
+                          v-model="editedItem.id"
+                          label="Identification*"
+                          prepend-inner-icon="mdi-card-account-details-outline"
+                          :rules="[rules.required]"
+                          required
+                        >
+                        </v-text-field>
+                      </v-col>
+                      <v-col cols="6">
+                        <v-text-field
+                          v-model="editedItem.phone"
+                          label="Phone number*"
+                          :rules="phoneRules"
+                        >
+                        </v-text-field>
+                      </v-col>
+                      <v-col cols="6">
+                        <v-select
+                          v-model="editedItem.role"
+                          :items="['1', '2', '3']"
+                          label="Role*"
+                          :rules="[rules.required]"
+                          required
+                        ></v-select>
+                      </v-col>
+                    </v-row>
+                    <small>*indicates required field</small>
+                  </v-container>
+                </v-card-text>
+
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="blue darken-1" text @click="close">
+                    Cancel
+                  </v-btn>
+                  <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+            <v-dialog v-model="dialogDelete" max-width="500px">
+              <v-card>
+                <v-card-title class="headline"
+                  >Are you sure you want to delete this item?</v-card-title
+                >
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="blue darken-1" text @click="closeDelete"
+                    >Cancel</v-btn
+                  >
+                  <v-btn color="blue darken-1" text @click="deleteItemConfirm"
+                    >OK</v-btn
+                  >
+                  <v-spacer></v-spacer>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+          </v-toolbar>
+        </template>
+        <template v-slot:item.actions="{ item }">
+          <v-icon small class="mr-2" @click="editItem(item)">
+            mdi-pencil
+          </v-icon>
+          <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
+        </template>
+        <template v-slot:no-data>
+          <v-btn color="primary" @click="initialize"> Reset </v-btn>
+        </template>
+      </v-data-table>
     </v-col>
   </v-row>
 </template>
 
 <script>
-import Logo from '~/components/Logo.vue'
-import VuetifyLogo from '~/components/VuetifyLogo.vue'
+import { url } from "../assets/config"
+import Axios from "axios"
+
 
 export default {
-  components: {
-    Logo,
-    VuetifyLogo
-  }
-}
+  data: () => ({
+    dialog: false,
+    dialogDelete: false,
+    emailRules: [
+      (v) => !!v || "E-mail is required",
+      (v) => /.+@.+\..+/.test(v) || "E-mail must be valid",
+    ],
+    passwordRules: {
+      required: (value) => !!value || "Required.",
+      min: (v) => v.length >= 6 || "Min 6 characters",
+    },
+    rules: {
+      required: (value) => !!value || "Required.",
+    },
+    phoneRules: [
+      (v) => !!v || "Phone number is required",
+      (v) => /^\d+$/.test(v) || "Must contain only numbers",
+    ],
+    headers: [
+      { text: "Name", value: "name", align: "start"},
+      { text: "Lastname", value: "lastname" },
+      { text: "Email", value: "email", sortable: false },
+      { text: "Identification type", value: "type_id" },
+      { text: "Identification", value: "id", sortable: false },
+      { text: "Phone number", value: "phone" },
+      { text: "Role", value: "role" },
+      { text: "Actions", value: "actions", sortable: false },
+    ],
+    users: [],
+    editedIndex: -1,
+    editedItem: {
+      name: "",
+      lastname: "",
+      email: "",
+      type_id: "",
+      id: "",
+      phone: "",
+      role: "",
+    },
+    defaultItem: {
+      name: "",
+      lastname: "",
+      email: "",
+      type_id: "",
+      id: "",
+      phone: "",
+      role: "",
+    },
+    
+  }),
+
+  computed: {
+    formTitle() {
+      return this.editedIndex === -1 ? "New Item" : "Edit Item";
+    },
+  },
+
+  watch: {
+    dialog(val) {
+      val || this.close();
+    },
+    dialogDelete(val) {
+      val || this.closeDelete();
+    },
+  },
+
+  created() {
+    this.initialize();
+  },
+
+  methods: {
+    initialize() {
+      
+      let secret_token = document.cookie.split("=")[1]
+      Axios.get(`${url}/users`, {headers: {token: secret_token}})
+      .then((res) => {
+        console.log(res.data)
+        this.users = res.data.data
+      })
+    },
+
+    editItem(item) {
+      this.editedIndex = this.users.indexOf(item);
+      this.editedItem = Object.assign({}, item);
+      this.dialog = true;
+    },
+
+    deleteItem(item) {
+      this.editedIndex = this.users.indexOf(item);
+      this.editedItem = Object.assign({}, item);
+      this.dialogDelete = true;
+    },
+
+    deleteItemConfirm() {
+      this.users.splice(this.editedIndex, 1);
+      this.closeDelete();
+    },
+
+    close() {
+      this.dialog = false;
+      this.$nextTick(() => {
+        this.editedItem = Object.assign({}, this.defaultItem);
+        this.editedIndex = -1;
+      });
+    },
+
+    closeDelete() {
+      this.dialogDelete = false;
+      this.$nextTick(() => {
+        this.editedItem = Object.assign({}, this.defaultItem);
+        this.editedIndex = -1;
+      });
+    },
+
+    save() {
+      if (this.editedIndex > -1) {
+        Object.assign(this.users[this.editedIndex], this.editedItem);
+      } else {
+        this.users.push(this.editedItem);
+      }
+      this.close();
+    },
+  },
+};
 </script>

@@ -57,7 +57,7 @@
       <v-spacer />
     </v-app-bar>
     <v-main>
-      <v-container>
+      <v-container fill-height>
         <nuxt />
       </v-container>
     </v-main>
